@@ -2,11 +2,14 @@ version: "2"
 sql:
   - engine: "postgresql"
     schema: "schema.sql"
-    queries: "../internal/domains/vehiclelocations"
+    queries: "../internal/domain/vehiclelocation"
     gen:
       go:
-        package: "vehiclelocations"
-        out: "../internal/domains/vehiclelocations"
+        package: "vehiclelocation"
+        out: "../internal/domain/vehiclelocation"
         sql_package: "pgx/v5"
+        overrides:
+          - db_type: "vehicle_locations"
+            go_type: "github.com/naufalfmm/fleet-management-system/internal/model.VehicleLocation"
         emit_json_tags: true
         emit_interface: true
