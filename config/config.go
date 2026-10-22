@@ -1,5 +1,12 @@
 package config
 
+import (
+	"fmt"
+
+	"github.com/joho/godotenv"
+	"github.com/kelseyhightower/envconfig"
+)
+
 type Config struct {
 	Name string `envconfig:"NAME"`
 	Port int    `envconfig:"PORT" default:"8080"`
@@ -20,4 +27,30 @@ type Config struct {
 	MessageQueuePort     string `envconfig:"MESSAGE_QUEUE_PORT" default:"5672"`
 	MessageQueueUser     string `envconfig:"MESSAGE_QUEUE_USER"`
 	MessageQueuePassword string `envconfig:"MESSAGE_QUEUE_PASSWORD"`
+}
+
+func (c *Config) GetDSN() string {
+	return fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		c.DBUsername,
+		c.DBPassword,
+		c.DBHost,
+		c.DBPort,
+		c.DBName,
+		c.DBSSL,
+	)
+}
+
+func LoadConfig() (*Config, error) {
+	err := godotenv.Load("./config/.env")
+	if err != nil {
+		return nil, err
+	}
+
+	var cfg Config
+	if err := envconfig.Process("", &cfg); err != nil {
+		return nil, err
+	}
+
+	return &cfg, nil
 }
