@@ -42,3 +42,66 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (VehicleLocation
 	)
 	return i, err
 }
+
+const getHistory = `-- name: GetHistory :many
+SELECT id, vehicle_id, latitude, longitude, timestamp, created_at
+FROM vehicle_locations
+WHERE vehicle_id = $1
+    AND (timestamp >= $2::bigint AND timestamp <= $3::bigint)
+ORDER BY timestamp DESC
+`
+
+type GetHistoryParams struct {
+	VehicleID     string `json:"vehicle_id"`
+	TimestampFrom int64  `json:"timestamp_from"`
+	TimestampTo   int64  `json:"timestamp_to"`
+}
+
+func (q *Queries) GetHistory(ctx context.Context, arg GetHistoryParams) ([]VehicleLocation, error) {
+	rows, err := q.db.Query(ctx, getHistory, arg.VehicleID, arg.TimestampFrom, arg.TimestampTo)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []VehicleLocation
+	for rows.Next() {
+		var i VehicleLocation
+		if err := rows.Scan(
+			&i.ID,
+			&i.VehicleID,
+			&i.Latitude,
+			&i.Longitude,
+			&i.Timestamp,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getLatest = `-- name: GetLatest :one
+SELECT id, vehicle_id, latitude, longitude, timestamp, created_at
+FROM vehicle_locations
+WHERE vehicle_id = $1
+ORDER BY timestamp DESC
+LIMIT 1
+`
+
+func (q *Queries) GetLatest(ctx context.Context, vehicleID string) (VehicleLocation, error) {
+	row := q.db.QueryRow(ctx, getLatest, vehicleID)
+	var i VehicleLocation
+	err := row.Scan(
+		&i.ID,
+		&i.VehicleID,
+		&i.Latitude,
+		&i.Longitude,
+		&i.Timestamp,
+		&i.CreatedAt,
+	)
+	return i, err
+}

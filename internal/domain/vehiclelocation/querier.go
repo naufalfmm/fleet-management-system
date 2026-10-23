@@ -10,6 +10,8 @@ import (
 
 type Querier interface {
 	Create(ctx context.Context, arg CreateParams) (VehicleLocation, error)
+	GetHistory(ctx context.Context, arg GetHistoryParams) ([]VehicleLocation, error)
+	GetLatest(ctx context.Context, vehicleID string) (VehicleLocation, error)
 }
 
 var _ Querier = (*Queries)(nil)
