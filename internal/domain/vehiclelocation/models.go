@@ -8,6 +8,33 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Route struct {
+	ID        int64            `json:"id"`
+	Code      string           `json:"code"`
+	Name      string           `json:"name"`
+	CreatedAt pgtype.Timestamp `json:"created_at"`
+}
+
+type RouteStop struct {
+	ID        int64            `json:"id"`
+	RouteID   int64            `json:"route_id"`
+	Direction string           `json:"direction"`
+	Name      string           `json:"name"`
+	Latitude  pgtype.Numeric   `json:"latitude"`
+	Longitude pgtype.Numeric   `json:"longitude"`
+	StopOrder int32            `json:"stop_order"`
+	CreatedAt pgtype.Timestamp `json:"created_at"`
+}
+
+type VehicleAssignment struct {
+	ID                 int64            `json:"id"`
+	VehicleID          string           `json:"vehicle_id"`
+	AssignedRouteID    pgtype.Int8      `json:"assigned_route_id"`
+	AssignedDirection  pgtype.Text      `json:"assigned_direction"`
+	CurrentRouteStopID pgtype.Int8      `json:"current_route_stop_id"`
+	CreatedAt          pgtype.Timestamp `json:"created_at"`
+}
+
 type VehicleLocation struct {
 	ID        int64            `json:"id"`
 	VehicleID string           `json:"vehicle_id"`

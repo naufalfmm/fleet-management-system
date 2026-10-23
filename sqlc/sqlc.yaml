@@ -13,3 +13,29 @@ sql:
             go_type: "github.com/naufalfmm/fleet-management-system/internal/model.VehicleLocation"
         emit_json_tags: true
         emit_interface: true
+  - engine: "postgresql"
+    schema: "schema.sql"
+    queries: "../internal/domain/routestop"
+    gen:
+      go:
+        package: "routestop"
+        out: "../internal/domain/routestop"
+        sql_package: "pgx/v5"
+        overrides:
+          - db_type: "route_stops"
+            go_type: "github.com/naufalfmm/fleet-management-system/internal/model.RouteStop"
+        emit_json_tags: true
+        emit_interface: true
+  - engine: "postgresql"
+    schema: "schema.sql"
+    queries: "../internal/domain/vehicleassignment"
+    gen:
+      go:
+        package: "vehicleassignment"
+        out: "../internal/domain/vehicleassignment"
+        sql_package: "pgx/v5"
+        overrides:
+          - db_type: "vehicle_assignments"
+            go_type: "github.com/naufalfmm/fleet-management-system/internal/model.VehicleAssignment"
+        emit_json_tags: true
+        emit_interface: true

@@ -27,6 +27,11 @@ type Config struct {
 	MessageQueuePort     string `envconfig:"MESSAGE_QUEUE_PORT" default:"5672"`
 	MessageQueueUser     string `envconfig:"MESSAGE_QUEUE_USER"`
 	MessageQueuePassword string `envconfig:"MESSAGE_QUEUE_PASSWORD"`
+
+	RabbitMqGeofencingExchange string `envconfig:"RABBITMQ_GEOFENCING_EXCHANGE"`
+	RabbitMqGeofencingQueue    string `envconfig:"RABBITMQ_GEOFENCING_QUEUE"`
+
+	GeofencingRadiusMeter float64 `envconfig:"GEOFENCING_RADIUS_METER" default:"50"`
 }
 
 func (c *Config) GetDSN() string {
