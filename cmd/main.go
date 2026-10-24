@@ -4,18 +4,25 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/gin/binding"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/naufalfmm/fleet-management-system/config"
 	routestopdomain "github.com/naufalfmm/fleet-management-system/internal/domain/routestop"
 	vehicleassignmentdomain "github.com/naufalfmm/fleet-management-system/internal/domain/vehicleassignment"
 	vehiclelocationdomain "github.com/naufalfmm/fleet-management-system/internal/domain/vehiclelocation"
-	vehiclelocationctrl "github.com/naufalfmm/fleet-management-system/internal/infrastructure/mqtt/controller/vehiclelocation"
+	vehiclelocationmqttctrl "github.com/naufalfmm/fleet-management-system/internal/infrastructure/mqtt/controller/vehiclelocation"
 	"github.com/naufalfmm/fleet-management-system/internal/infrastructure/mqtt/subscriber"
+	middlewarerest "github.com/naufalfmm/fleet-management-system/internal/infrastructure/rest/controller/middleware"
+	"github.com/naufalfmm/fleet-management-system/internal/infrastructure/rest/controller/router"
+	vehiclelocationrestctrl "github.com/naufalfmm/fleet-management-system/internal/infrastructure/rest/controller/vehiclelocation"
 	"github.com/naufalfmm/fleet-management-system/internal/pkg/messagequeue/rabbitmq"
 	v10 "github.com/naufalfmm/fleet-management-system/internal/pkg/validator/v10"
 	routestoprepo "github.com/naufalfmm/fleet-management-system/internal/repository/routestop"
@@ -29,6 +36,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	ge := gin.New()
 
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(fmt.Sprintf("tcp://%s:%s", conf.MqttBrokerHost, conf.MqttBrokerPort))
@@ -72,10 +81,29 @@ func main() {
 
 	vehicleLocationUsecase := vehiclelocationusc.NewUsecase(vehicleLocationRepository, vehicleAssignmentRepository, routeStopRepository, mq, *conf)
 
-	vehicleLocationController := vehiclelocationctrl.NewController(vehicleLocationUsecase, vld)
+	vehicleLocationMqttController := vehiclelocationmqttctrl.NewController(vehicleLocationUsecase, vld)
 
-	subscriber := subscriber.NewSubscriber(vehicleLocationController, *conf)
+	subscriber := subscriber.NewSubscriber(vehicleLocationMqttController, *conf)
 	subscriber.Register(client)
+
+	vehicleLocationRestController := vehiclelocationrestctrl.NewController(vehicleLocationUsecase)
+	restMiddleware := middlewarerest.NewMiddleware()
+
+	router := router.NewRouter(vehicleLocationRestController, restMiddleware)
+	router.Register(ge)
+
+	binding.Validator = vld
+
+	httpServer := http.Server{
+		Addr:    fmt.Sprintf(":%d", conf.Port),
+		Handler: ge,
+	}
+
+	go func() {
+		if err := httpServer.ListenAndServe(); err != nil {
+			panic(err)
+		}
+	}()
 
 	sc := make(chan os.Signal, 1)
 	signal.Notify(
@@ -86,5 +114,13 @@ func main() {
 	)
 
 	<-sc
+
 	client.Disconnect(250)
+
+	ctxShutDown, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := httpServer.Shutdown(ctxShutDown); err != nil {
+		panic(err)
+	}
 }

@@ -2,11 +2,14 @@ package vehiclelocation
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 
 	"github.com/naufalfmm/fleet-management-system/config"
+	"github.com/naufalfmm/fleet-management-system/internal/common"
 	"github.com/naufalfmm/fleet-management-system/internal/model/dao"
 	"github.com/naufalfmm/fleet-management-system/internal/model/dto"
-	"github.com/naufalfmm/fleet-management-system/internal/pkg/common"
+	pkgcommon "github.com/naufalfmm/fleet-management-system/internal/pkg/common"
 	"github.com/naufalfmm/fleet-management-system/internal/pkg/messagequeue"
 	"github.com/naufalfmm/fleet-management-system/internal/repository/routestop"
 	"github.com/naufalfmm/fleet-management-system/internal/repository/vehicleassignment"
@@ -90,7 +93,7 @@ func (u *usecase) checkGeofencing(ctx context.Context, vehicleID string, current
 	}
 
 	for _, routeStop := range routeStops {
-		dist := common.CalculateDistanceFast(currentVehicleLocation.Latitude, currentVehicleLocation.Longitude, routeStop.Latitude, routeStop.Longitude)
+		dist := pkgcommon.CalculateDistanceFast(currentVehicleLocation.Latitude, currentVehicleLocation.Longitude, routeStop.Latitude, routeStop.Longitude)
 		if dist.LessThanOrEqual(decimal.NewFromFloat(u.conf.GeofencingRadiusMeter)) {
 			if _, err := u.vehicleAssignmentRepository.UpdateCurrentStop(ctx, vehicleAssignment.ID, routeStop.ID); err != nil {
 				return nil
@@ -114,7 +117,15 @@ func (u *usecase) checkGeofencing(ctx context.Context, vehicleID string, current
 }
 
 func (u *usecase) GetLatestVehicleLocation(ctx context.Context, vehicleID string) (dao.VehicleLocation, error) {
-	return u.vehicleLocationRepository.GetLatest(ctx, vehicleID)
+	vl, err := u.vehicleLocationRepository.GetLatest(ctx, vehicleID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return dao.VehicleLocation{}, common.ErrNoLocation(vehicleID)
+		}
+		return dao.VehicleLocation{}, err
+	}
+
+	return vl, nil
 }
 
 func (u *usecase) GetVehicleLocationHistories(ctx context.Context, req dto.GetVehicleLocationHistoriesRequest) ([]dao.VehicleLocation, error) {
