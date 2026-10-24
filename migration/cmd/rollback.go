@@ -20,11 +20,11 @@ func rollback(d *sql.DB) cli.ActionFunc {
 		}
 
 		if ver > 0 {
-			if err := goose.DownTo(d, "migrations/sql", ver); err != nil {
+			if err := goose.DownTo(d, "migration/sql", ver); err != nil {
 				return err
 			}
 		} else {
-			if err := goose.Down(d, "migrations/sql"); err != nil {
+			if err := goose.Down(d, "migration/sql"); err != nil {
 				return err
 			}
 		}

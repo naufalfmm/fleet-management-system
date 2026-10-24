@@ -27,6 +27,8 @@ func (r *GetVehicleLocationHistoriesRequest) FromGinContext(gc *gin.Context) err
 		return common.ErrMissingParam("vehicle_id")
 	}
 
+	r.VehicleID = vehicleID
+
 	strTimestampFrom := gc.Query("start")
 	if strTimestampFrom != "" {
 		timestampFrom, err := strconv.ParseInt(strTimestampFrom, 10, 64)
@@ -35,7 +37,7 @@ func (r *GetVehicleLocationHistoriesRequest) FromGinContext(gc *gin.Context) err
 		}
 	}
 
-	strTimestampTo := gc.Query("start")
+	strTimestampTo := gc.Query("end")
 	if strTimestampTo != "" {
 		timestampTo, err := strconv.ParseInt(strTimestampTo, 10, 64)
 		if err == nil {

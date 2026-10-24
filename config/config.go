@@ -55,7 +55,7 @@ func (c *Config) GetAmqpUrl() string {
 }
 
 func LoadConfig() (*Config, error) {
-	err := godotenv.Load("./config/.env")
+	err := godotenv.Load(".env")
 	if err != nil {
 		return nil, err
 	}

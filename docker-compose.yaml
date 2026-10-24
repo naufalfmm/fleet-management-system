@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  # 1. PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: fleet_postgres
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${DB_USERNAME:-postgres}
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-postgres}
+      - POSTGRES_DB=${DB_NAME:-fleet_db}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - fleet_pgdata:/var/lib/postgresql/data
+    # Tambahkan Healthcheck agar aplikasi Go tahu kapan DB benar-benar siap
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-fleet_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 2. RabbitMQ
+  rabbitmq:
+    image: rabbitmq:3-alpine
+    container_name: fleet_rabbitmq
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - RABBITMQ_DEFAULT_USER=${MESSAGE_QUEUE_USER:-guest}
+      - RABBITMQ_DEFAULT_PASS=${MESSAGE_QUEUE_PASSWORD:-guest}
+    ports:
+      - "${MESSAGE_QUEUE_PORT:-5672}:5672"
+    volumes:
+      - fleet_rabbitmq_data:/var/lib/rabbitmq
+
+  # 3. Eclipse Mosquitto
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: fleet_mosquitto
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "${MQTT_BROKER_PORT:-1883}:1883"
+    command: >
+      sh -c "
+      rm -f /mosquitto/config/pwfile &&
+      echo 'listener 1883' > /mosquitto/config/mosquitto.conf &&
+      echo 'allow_anonymous false' >> /mosquitto/config/mosquitto.conf &&
+      echo 'password_file /mosquitto/config/pwfile' >> /mosquitto/config/mosquitto.conf &&
+      mosquitto_passwd -c -b /mosquitto/config/pwfile $$MQTT_BROKER_USER $$MQTT_BROKER_PASSWORD &&
+      chown -R mosquitto:mosquitto /mosquitto/config &&
+      mosquitto -c /mosquitto/config/mosquitto.conf
+      "
+    volumes:
+      - fleet_mosquitto_data:/mosquitto/data
+      - fleet_mosquitto_log:/mosquitto/log
+
+  # 4. Fleet Management System (Aplikasi Utama Go)
+  fleet-app:
+    build: .
+    container_name: fleet_app
+    restart: always
+    env_file:
+      - .env
+    ports:
+      # Expose port REST API dari env (contoh: 8080)
+      - "${PORT:-8080}:${PORT:-8080}"
+    depends_on:
+      # Tunggu sampai Postgres benar-benar siap menerima koneksi (migrasi aman)
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+      mosquitto:
+        condition: service_started
+
+volumes:
+  fleet_pgdata:
+  fleet_rabbitmq_data:
+  fleet_mosquitto_data:
+  fleet_mosquitto_log:

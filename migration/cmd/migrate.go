@@ -17,7 +17,7 @@ func migrate(d *sql.DB) cli.ActionFunc {
 			return err
 		}
 
-		if err := goose.Up(d, "migrations/sql"); err != nil {
+		if err := goose.Up(d, "migration/sql"); err != nil {
 			return err
 		}
 

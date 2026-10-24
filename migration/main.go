@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/naufalfmm/fleet-management-system/config"
-	"github.com/naufalfmm/fleet-management-system/migrations/cmd"
+	"github.com/naufalfmm/fleet-management-system/migration/cmd"
 	"github.com/urfave/cli/v2"
 
 	_ "github.com/jackc/pgx/v5/stdlib"

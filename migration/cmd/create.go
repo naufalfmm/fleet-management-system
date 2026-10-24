@@ -17,7 +17,7 @@ func create(d *sql.DB) cli.ActionFunc {
 			return err
 		}
 
-		if err := goose.Create(d, "migrations/sql", name, "sql"); err != nil {
+		if err := goose.Create(d, "migration/sql", name, "sql"); err != nil {
 			return err
 		}
 
