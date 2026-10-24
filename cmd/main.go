@@ -23,6 +23,7 @@ import (
 	middlewarerest "github.com/naufalfmm/fleet-management-system/internal/infrastructure/rest/controller/middleware"
 	"github.com/naufalfmm/fleet-management-system/internal/infrastructure/rest/controller/router"
 	vehiclelocationrestctrl "github.com/naufalfmm/fleet-management-system/internal/infrastructure/rest/controller/vehiclelocation"
+	"github.com/naufalfmm/fleet-management-system/internal/pkg/logger/slog"
 	"github.com/naufalfmm/fleet-management-system/internal/pkg/messagequeue/rabbitmq"
 	v10 "github.com/naufalfmm/fleet-management-system/internal/pkg/validator/v10"
 	routestoprepo "github.com/naufalfmm/fleet-management-system/internal/repository/routestop"
@@ -71,6 +72,11 @@ func main() {
 		panic(err)
 	}
 
+	log, err := slog.New()
+	if err != nil {
+		panic(err)
+	}
+
 	routeStopQuerier := routestopdomain.New(dbpool)
 	vehicleAssignmentQuerier := vehicleassignmentdomain.New(dbpool)
 	vehicleLocationQuerier := vehiclelocationdomain.New(dbpool)
@@ -81,7 +87,7 @@ func main() {
 
 	vehicleLocationUsecase := vehiclelocationusc.NewUsecase(vehicleLocationRepository, vehicleAssignmentRepository, routeStopRepository, mq, *conf)
 
-	vehicleLocationMqttController := vehiclelocationmqttctrl.NewController(vehicleLocationUsecase, vld)
+	vehicleLocationMqttController := vehiclelocationmqttctrl.NewController(vehicleLocationUsecase, vld, log)
 
 	subscriber := subscriber.NewSubscriber(vehicleLocationMqttController, *conf)
 	subscriber.Register(client)

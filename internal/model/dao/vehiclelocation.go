@@ -14,3 +14,12 @@ type VehicleLocation struct {
 	Timestamp int64
 	CreatedAt time.Time
 }
+
+func (v VehicleLocation) Args() []any {
+	return []any{
+		"vehicle_id", v.VehicleID,
+		"latitude", v.Latitude,
+		"longitude", v.Longitude,
+		"timestamp", v.Timestamp,
+	}
+}

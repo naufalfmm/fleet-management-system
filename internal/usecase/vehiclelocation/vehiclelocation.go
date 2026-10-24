@@ -18,7 +18,7 @@ import (
 )
 
 type Usecase interface {
-	InsertLocationFromFleet(ctx context.Context, req dto.InsertLocationRequest) error
+	InsertLocationFromFleet(ctx context.Context, req dto.InsertLocationRequest) (dao.VehicleLocation, error)
 	GetLatestVehicleLocation(ctx context.Context, vehicleID string) (dao.VehicleLocation, error)
 	GetVehicleLocationHistories(ctx context.Context, req dto.GetVehicleLocationHistoriesRequest) ([]dao.VehicleLocation, error)
 }
@@ -45,7 +45,7 @@ func NewUsecase(vehicleLocationRepository vehiclelocation.Repository, vehicleAss
 	}
 }
 
-func (u *usecase) InsertLocationFromFleet(ctx context.Context, req dto.InsertLocationRequest) error {
+func (u *usecase) InsertLocationFromFleet(ctx context.Context, req dto.InsertLocationRequest) (dao.VehicleLocation, error) {
 	vehicleLoc, err := u.vehicleLocationRepository.Create(ctx, dao.VehicleLocation{
 		VehicleID: req.VehicleID,
 		Latitude:  req.Latitude,
@@ -53,14 +53,14 @@ func (u *usecase) InsertLocationFromFleet(ctx context.Context, req dto.InsertLoc
 		Timestamp: req.Timestamp,
 	})
 	if err != nil {
-		return err
+		return dao.VehicleLocation{}, err
 	}
 
 	if err := u.checkGeofencing(ctx, req.VehicleID, vehicleLoc); err != nil {
-		return err
+		return dao.VehicleLocation{}, err
 	}
 
-	return nil
+	return vehicleLoc, nil
 }
 
 func (u *usecase) checkGeofencing(ctx context.Context, vehicleID string, currentVehicleLocation dao.VehicleLocation) error {
