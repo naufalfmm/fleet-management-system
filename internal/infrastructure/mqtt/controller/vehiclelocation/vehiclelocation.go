@@ -31,20 +31,27 @@ func (c Controller) InsertLocationFromFleet(cl mqtt.Client, msg mqtt.Message) {
 
 	var payload dto.InsertLocationRequest
 	if err := json.Unmarshal(msg.Payload(), &payload); err != nil {
-		c.logger.Error(ctx, "error when parsing message", dto.ErrorResponse{Error: err})
+		c.logger.Error(ctx, "error when parsing message", "err", err)
 		return
 	}
 
 	if err := c.validator.ValidateStruct(payload); err != nil {
-		c.logger.Error(ctx, "error format data", dto.ErrorResponse{Error: err})
+		c.logger.Error(ctx, "error format data", "err", err)
 		return
 	}
 
 	vehicleLoc, err := c.vehicleLocationUsecase.InsertLocationFromFleet(ctx, payload)
 	if err != nil {
-		c.logger.Error(ctx, "error insert location", dto.ErrorResponse{Error: err})
+		c.logger.Error(ctx, "error insert location", "err", err)
 		return
 	}
 
-	c.logger.Info(ctx, "location is inserted successfully", vehicleLoc)
+	vehicleLocation := dto.VehicleLocationResponse{
+		VehicleID: vehicleLoc.VehicleID,
+		Latitude:  vehicleLoc.Latitude,
+		Longitude: vehicleLoc.Longitude,
+		Timestamp: vehicleLoc.Timestamp,
+	}
+
+	c.logger.Info(ctx, "location is inserted successfully", "data", vehicleLocation)
 }

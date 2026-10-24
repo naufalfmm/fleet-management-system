@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -38,43 +37,48 @@ func main() {
 		panic(err)
 	}
 
+	log, err := slog.New()
+	if err != nil {
+		panic(err)
+	}
+
 	ge := gin.New()
 
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(fmt.Sprintf("tcp://%s:%s", conf.MqttBrokerHost, conf.MqttBrokerPort))
 	opts.SetUsername(conf.MqttBrokerUser)
 	opts.SetPassword(conf.MqttBrokerPassword)
-	opts.SetClientID(conf.MqttBrokerClientID)
+	opts.SetClientID(fmt.Sprintf("%s-internal", conf.MqttBrokerClientID))
 
 	client := mqtt.NewClient(opts)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		panic(token.Error())
+		log.Error(context.Background(), "connect MQTT error", "err", token.Error())
+		return
 	}
 
 	ctx := context.Background()
 	dbpool, err := pgxpool.New(ctx, conf.GetDSN())
 	if err != nil {
-		panic(err)
+		log.Error(ctx, "initiate postgres error", "err", err)
+		return
 	}
 	defer dbpool.Close()
 
 	if err := dbpool.Ping(ctx); err != nil {
-		log.Fatalf("Database ping failed: %v\n", err)
+		log.Error(ctx, "ping database failed", "err", err)
+		return
 	}
 
 	mq, err := rabbitmq.NewRabbitMQ(conf.GetAmqpUrl())
 	if err != nil {
-		panic(err)
+		log.Error(ctx, "initiate RabbitMQ error", "err", err)
+		return
 	}
 
 	vld, err := v10.NewV10()
 	if err != nil {
-		panic(err)
-	}
-
-	log, err := slog.New()
-	if err != nil {
-		panic(err)
+		log.Error(ctx, "initiate validator error", "err", err)
+		return
 	}
 
 	routeStopQuerier := routestopdomain.New(dbpool)
@@ -107,7 +111,8 @@ func main() {
 
 	go func() {
 		if err := httpServer.ListenAndServe(); err != nil {
-			panic(err)
+			log.Error(ctx, "listen and serve server error", "err", err)
+			return
 		}
 	}()
 
@@ -127,6 +132,7 @@ func main() {
 	defer cancel()
 
 	if err := httpServer.Shutdown(ctxShutDown); err != nil {
-		panic(err)
+		log.Info(ctx, "server is closed")
+		return
 	}
 }

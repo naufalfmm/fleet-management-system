@@ -34,6 +34,8 @@ type Config struct {
 	RabbitMqGeofencingQueue    string `envconfig:"RABBITMQ_GEOFENCING_QUEUE"`
 
 	GeofencingRadiusMeter float64 `envconfig:"GEOFENCING_RADIUS_METER" default:"50"`
+
+	SimulatorEnable bool `envconfig:"SIMULATOR_ENABLE" default:"false"`
 }
 
 func (c *Config) GetDSN() string {
