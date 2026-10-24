@@ -3,10 +3,9 @@ package dto
 import "github.com/shopspring/decimal"
 
 type InsertLocationRequest struct {
-	VehicleID string `json:"-"`
-
-	Latitude  decimal.Decimal `json:"latitude" validate:"dreq,dgte=-5.320,dlte=-6.398"`
-	Longitude decimal.Decimal `json:"longitude" validate:"dreq,dgte=106.378,dlte=107.017"`
+	VehicleID string          `json:"vehicle_id" validate:"required"`
+	Latitude  decimal.Decimal `json:"latitude" validate:"dreq"`
+	Longitude decimal.Decimal `json:"longitude" validate:"dreq"`
 	Timestamp int64           `json:"timestamp" validate:"required"`
 }
 

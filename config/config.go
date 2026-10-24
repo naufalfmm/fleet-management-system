@@ -22,12 +22,14 @@ type Config struct {
 	MqttBrokerPort     string `envconfig:"MQTT_BROKER_PORT" default:"1883"`
 	MqttBrokerUser     string `envconfig:"MQTT_BROKER_USER"`
 	MqttBrokerPassword string `envconfig:"MQTT_BROKER_PASSWORD"`
+	MqttBrokerClientID string `envconfig:"MQTT_BROKER_CLIENT_ID"`
 
 	MessageQueueHost     string `envconfig:"MESSAGE_QUEUE_HOST" default:"localhost"`
 	MessageQueuePort     string `envconfig:"MESSAGE_QUEUE_PORT" default:"5672"`
 	MessageQueueUser     string `envconfig:"MESSAGE_QUEUE_USER"`
 	MessageQueuePassword string `envconfig:"MESSAGE_QUEUE_PASSWORD"`
 
+	RabbitMqSubscriberQos      int    `envconfig:"RABBITMQ_SUBSCRIBER_QOS" default:"1"`
 	RabbitMqGeofencingExchange string `envconfig:"RABBITMQ_GEOFENCING_EXCHANGE"`
 	RabbitMqGeofencingQueue    string `envconfig:"RABBITMQ_GEOFENCING_QUEUE"`
 
@@ -44,6 +46,10 @@ func (c *Config) GetDSN() string {
 		c.DBName,
 		c.DBSSL,
 	)
+}
+
+func (c *Config) GetAmqpUrl() string {
+	return fmt.Sprintf("amqp://%s:%s@%s:%s", c.MessageQueueUser, c.MessageQueuePassword, c.MessageQueueHost, c.MessageQueuePort)
 }
 
 func LoadConfig() (*Config, error) {

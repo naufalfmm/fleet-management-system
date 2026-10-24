@@ -13,7 +13,7 @@ type rabbitMQ struct {
 	channel *amqp.Channel
 }
 
-func NewRabbitMQ(amqpUrl string, exchanges []string) (messagequeue.MessageQueue, error) {
+func NewRabbitMQ(amqpUrl string) (messagequeue.MessageQueue, error) {
 	conn, err := amqp.Dial(amqpUrl)
 	if err != nil {
 		return nil, err

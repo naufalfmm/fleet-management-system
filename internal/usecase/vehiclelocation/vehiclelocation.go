@@ -63,7 +63,7 @@ func (u *usecase) InsertLocationFromFleet(ctx context.Context, req dto.InsertLoc
 func (u *usecase) checkGeofencing(ctx context.Context, vehicleID string, currentVehicleLocation dao.VehicleLocation) error {
 	vehicleAssignment, err := u.vehicleAssignmentRepository.GetByVehicleID(ctx, vehicleID)
 	if err != nil {
-		return err
+		return nil
 	}
 
 	if vehicleAssignment.AssignedRouteID == nil {
@@ -78,7 +78,7 @@ func (u *usecase) checkGeofencing(ctx context.Context, vehicleID string, current
 	if vehicleAssignment.CurrentRouteStopID != nil {
 		routeStop, err := u.routeStopRepository.GetByID(ctx, *vehicleAssignment.CurrentRouteStopID)
 		if err != nil {
-			return err
+			return nil
 		}
 
 		routeGetRestForm.StopOrderBiggerThan = routeStop.StopOrder
@@ -86,14 +86,14 @@ func (u *usecase) checkGeofencing(ctx context.Context, vehicleID string, current
 
 	routeStops, err := u.routeStopRepository.GetRest(ctx, routeGetRestForm)
 	if err != nil {
-		return err
+		return nil
 	}
 
 	for _, routeStop := range routeStops {
 		dist := common.CalculateDistanceFast(currentVehicleLocation.Latitude, currentVehicleLocation.Longitude, routeStop.Latitude, routeStop.Longitude)
 		if dist.LessThanOrEqual(decimal.NewFromFloat(u.conf.GeofencingRadiusMeter)) {
 			if _, err := u.vehicleAssignmentRepository.UpdateCurrentStop(ctx, vehicleAssignment.ID, routeStop.ID); err != nil {
-				return err
+				return nil
 			}
 
 			go func() {
