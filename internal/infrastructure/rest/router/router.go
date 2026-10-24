@@ -2,8 +2,8 @@ package router
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/naufalfmm/fleet-management-system/internal/infrastructure/rest/controller/middleware"
 	"github.com/naufalfmm/fleet-management-system/internal/infrastructure/rest/controller/vehiclelocation"
+	"github.com/naufalfmm/fleet-management-system/internal/infrastructure/rest/middleware"
 )
 
 type Router struct {
