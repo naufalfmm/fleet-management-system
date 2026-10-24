@@ -19,6 +19,8 @@ import (
 	vehiclelocationdomain "github.com/naufalfmm/fleet-management-system/internal/domain/vehiclelocation"
 	vehiclelocationmqttctrl "github.com/naufalfmm/fleet-management-system/internal/infrastructure/mqtt/controller/vehiclelocation"
 	"github.com/naufalfmm/fleet-management-system/internal/infrastructure/mqtt/subscriber"
+	vehiclelocationrbctrl "github.com/naufalfmm/fleet-management-system/internal/infrastructure/rabbitmq/controller/vehiclelocation"
+	"github.com/naufalfmm/fleet-management-system/internal/infrastructure/rabbitmq/listener"
 	vehiclelocationrestctrl "github.com/naufalfmm/fleet-management-system/internal/infrastructure/rest/controller/vehiclelocation"
 	middlewarerest "github.com/naufalfmm/fleet-management-system/internal/infrastructure/rest/middleware"
 	"github.com/naufalfmm/fleet-management-system/internal/infrastructure/rest/router"
@@ -29,6 +31,7 @@ import (
 	vehicleassignmentrepo "github.com/naufalfmm/fleet-management-system/internal/repository/vehicleassignment"
 	vehiclelocationrepo "github.com/naufalfmm/fleet-management-system/internal/repository/vehiclelocation"
 	vehiclelocationusc "github.com/naufalfmm/fleet-management-system/internal/usecase/vehiclelocation"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 func main() {
@@ -55,6 +58,13 @@ func main() {
 		log.Error(context.Background(), "connect MQTT error", "err", token.Error())
 		return
 	}
+
+	conn, err := amqp.Dial(conf.GetAmqpUrl())
+	if err != nil {
+		log.Error(context.Background(), "dial RabbitMQ error", "err", err)
+		return
+	}
+	defer conn.Close()
 
 	ctx := context.Background()
 	dbpool, err := pgxpool.New(ctx, conf.GetDSN())
@@ -102,6 +112,10 @@ func main() {
 	router := router.NewRouter(vehicleLocationRestController, restMiddleware)
 	router.Register(ge)
 
+	vehicleLocationRabbitmqController := vehiclelocationrbctrl.NewController(vehicleLocationUsecase, vld, log)
+
+	listener := listener.NewListener(vehicleLocationRabbitmqController, log)
+
 	binding.Validator = vld
 
 	httpServer := http.Server{
@@ -115,6 +129,8 @@ func main() {
 			return
 		}
 	}()
+
+	go listener.Listen(conn)
 
 	sc := make(chan os.Signal, 1)
 	signal.Notify(

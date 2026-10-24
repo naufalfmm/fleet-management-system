@@ -50,6 +50,29 @@ func (r *rabbitMQ) Publish(ctx context.Context, exchange string, routingKey stri
 		return err
 	}
 
+	_, err = r.channel.QueueDeclare(
+		routingKey,
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+
+	err = r.channel.QueueBind(
+		routingKey,
+		routingKey,
+		exchange,
+		false,
+		nil,
+	)
+	if err != nil {
+		return err
+	}
+
 	err = r.channel.PublishWithContext(
 		ctx,
 		exchange,
